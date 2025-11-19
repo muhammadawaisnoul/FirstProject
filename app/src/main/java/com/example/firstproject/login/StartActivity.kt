@@ -15,6 +15,7 @@ class StartActivity : AppCompatActivity() {
 
     private lateinit var binding : ActivityStartBinding
     lateinit var auth : FirebaseAuth
+    lateinit var authListener : FirebaseAuth.AuthStateListener
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -22,28 +23,29 @@ class StartActivity : AppCompatActivity() {
         setContentView(binding.root)
         auth = FirebaseAuth.getInstance()
 
-
-        enableEdgeToEdge()
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
+        authListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            val user = FirebaseAuth.getInstance()
+            if (user != null) {
+                goTo(MainActivity::class.java)
+            } else {
+                goTo(LoginActivity::class.java)
+            }
         }
+
     }
 
     override fun onStart() {
         super.onStart()
-        val currentUser = auth.currentUser
-
-        if (currentUser != null) {
-            val intent = Intent(this, MainActivity::class.java)
-            startActivity(intent)
-            finish() // prevents returning to splash/login
-        } else {
-            val intent = Intent(this, LoginActivity::class.java)
-            startActivity(intent)
-            finish()
-        }
+        auth.addAuthStateListener(authListener)
     }
 
+    override fun onStop() {
+        super.onStop()
+        auth.removeAuthStateListener(authListener)
+    }
+
+    private fun goTo(activity: Class<*>) {
+        startActivity(Intent(this, activity))
+        finish()
+    }
 }
